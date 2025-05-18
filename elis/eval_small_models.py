@@ -10,7 +10,6 @@ from collections import defaultdict
 from latex2sympy2 import latex2sympy
 
 all_models = {
-    "0.5": "ollama/qwen3:0.6b",
     "1": "ollama/llama3.2:1b",
     "3": "ollama/llama3.2:3b",
     "8": "ollama/llama3.1:8b"
