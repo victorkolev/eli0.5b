@@ -13,6 +13,7 @@ all_models = {
     "0.5": "ollama/qwen3:0.6b",
     "1": "ollama/llama3.2:1b",
     "3": "ollama/llama3.2:3b",
+    "8": "ollama/llama3.1:8b"
 }
 
 def get_responses(model, prompt, k=1):
@@ -128,3 +129,4 @@ if __name__ == "__main__":
         success = evaluate(model, data)
         print(f"\n\n---------Evaluating model {model}--------\n\n\n")
         print("success rate for pass@1: ", np.mean(success))
+
