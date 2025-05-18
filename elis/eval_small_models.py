@@ -5,6 +5,7 @@ import numpy as np
 from litellm import completion
 from sympy.parsing.latex import parse_latex  # :contentReference[oaicite:0]{index=0}
 from sympy import simplify
+from tqdm import tqdm
 
 all_models = {
     "0.5": "ollama/qwen3:0.6b",
@@ -68,14 +69,20 @@ def load_data(file_path="omnimath_100.json"):
 def evaluate(model, k=1):
     data = load_data()
     success = []
-    for prompt, answer in zip(data['prompt'], data['answer']):
+    for prompt, answer in tqdm(zip(data['prompt'], data['answer']), desc=f"Evaluating {model}"):
         success.append(pass_k(model, prompt, answer, k))
 
     return np.array(success)
 
 
 if __name__ == "__main__":
-    for model in all_models.values():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, nargs='+', default=all_models.values(), help="One or more models to evaluate")
+    parser.add_argument("--data", type=str, default="omnimath_100.json")
+    args = parser.parse_args()
+    for model in args.model:
         success = evaluate(model)
         print(f"\n\n---------Evaluating model {model}--------\n\n\n")
         print("success rate for pass@1: ", np.mean(success))
