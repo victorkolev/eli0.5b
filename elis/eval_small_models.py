@@ -7,6 +7,7 @@ from sympy.parsing.latex import parse_latex  # :contentReference[oaicite:0]{inde
 from sympy import simplify
 from tqdm import tqdm
 from collections import defaultdict
+from latex2sympy2 import latex2sympy
 
 all_models = {
     "0.5": "ollama/qwen3:0.6b",
@@ -26,7 +27,6 @@ def get_responses(model, prompt, k=1):
     ]
 
 def fish_answer(response):
-    text_content = [response]
     answers = []
     # Regex pattern to find content within <answer>...</answer> OR \boxed{...}
     # The pattern uses two groups, one for each format.
@@ -36,23 +36,29 @@ def fish_answer(response):
     # The non-greedy '.*?' is used to match the shortest possible string.
     pattern = r"<answer>(.*?)</answer>|\\boxed{(.*?)}"
     
-    for match in re.finditer(pattern, text_content, re.DOTALL):
+    for match in re.finditer(pattern, response, re.DOTALL):
         # Check which group was matched
         if match.group(1) is not None:  # Matched <answer>content</answer>
             answers.append(match.group(1).strip()) # .strip() to remove leading/trailing whitespace
+            break
         elif match.group(2) is not None:  # Matched \boxed{content}
             answers.append(match.group(2).strip()) # .strip()
+            break
             
+    if len(answers) == 0: return None
     return answers[-1]
 
 def check_answer(answers, truth, backend='antlr'):
     results = []
-    expr2 = parse_latex(truth, backend=backend)
+    ans_sympy = latex2sympy(truth)
     for ans in answers:
-        expr1 = parse_latex(ans, backend=backend)
+        if ans is None:
+            results.append(False)
+        else:
+            expr1 = latex2sympy(ans)
 
-        eq = simplify(expr1 - expr2) == 0
-        results.append(bool(eq))
+            eq = simplify(expr1 - ans_sympy) == 0
+            results.append(bool(eq))
 
     return np.array(results)
 
