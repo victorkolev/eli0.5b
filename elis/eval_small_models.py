@@ -21,6 +21,7 @@ def get_responses(model, prompt, k=1):
         messages=[{"content": prompt,"role": "user"}], 
         api_base="http://localhost:11434",
         n=k,
+        max_tokens=2048,
     )
     return [
         responses.choices[i].message['content'] for i in range(len(responses.choices))
