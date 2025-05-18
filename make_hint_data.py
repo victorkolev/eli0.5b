@@ -1,23 +1,20 @@
 import litellm
 import os
 import json
-import time # To add delays if needed
+import time
 
 # --- Configuration ---
-TOGETHERAI_API_KEY = "4e8fd7f0826fb9dbaefcbaa1e3788ca9cad3614c17f88989087c6e3a38bafb00" # Replace with your actual key if different
+TOGETHERAI_API_KEY = "4e8fd7f0826fb9dbaefcbaa1e3788ca9cad3614c17f88989087c6e3a38bafb00"
 LLM_MODEL = "together_ai/meta-llama/Meta-Llama-3-70B-Instruct-Turbo"
-INPUT_DATASET_PATH = "omnimath_100.jsonl"
-OUTPUT_DATASET_PATH = "omnimath_100_with_hints.jsonl" # Output filename
+INPUT_DATASET_PATH = "omnimath_100.jsonl" # Your original dataset with problem, detailed_solution, AND concise_answer
+OUTPUT_DATASET_PATH = "omnimath_100_with_hints_v2.jsonl" # Use a new name for the output
 MAX_RETRIES = 3
-RETRY_DELAY = 10 # seconds (increased slightly for potentially busy APIs)
+RETRY_DELAY = 10
 
-# Set TogetherAI API key (can also be set as an environment variable outside the script)
 os.environ["TOGETHERAI_API_KEY"] = TOGETHERAI_API_KEY
 
 def generate_hint_for_problem(problem_text):
-    """
-    Generates a hint for a given math problem using the specified LLM.
-    """
+    # ... (this function remains the same) ...
     hint_prompt = f"""
 Here is a math question. Your task is to provide step-by-step hints that would guide a student towards the solution.
 IMPORTANT:
@@ -38,25 +35,20 @@ Hints:
             response = litellm.completion(
                 model=LLM_MODEL,
                 messages=[{"role": "user", "content": hint_prompt}],
-                temperature=0.3, # Lower temperature for more focused/deterministic hints
-                max_tokens=500,  # Adjust as needed, 500 should be generous for hints
-                # You might add other parameters like top_p if desired
-                # timeout=60 # Optional: set a timeout for the API call
+                temperature=0.3,
+                max_tokens=500,
             )
-            # Accessing content from litellm.ModelResponse
             if response.choices and response.choices[0].message and response.choices[0].message.content:
                 return response.choices[0].message.content.strip()
             else:
                 print(f"    Warning: Received unexpected response structure: {response}")
-                # Try to log more details from the response if it's not as expected
                 if hasattr(response, 'model_dump_json'):
                     print(f"    Full response dump: {response.model_dump_json(indent=2)}")
-                return None # Indicate failure to get content
+                return None
         except litellm.exceptions.RateLimitError as rle:
             print(f"    Rate limit error (attempt {attempt + 1}/{MAX_RETRIES}): {rle}")
             if attempt < MAX_RETRIES - 1:
-                # Implement exponential backoff or longer fixed delay for rate limits
-                current_delay = RETRY_DELAY * (2 ** attempt) # Exponential backoff
+                current_delay = RETRY_DELAY * (2 ** attempt)
                 print(f"    Retrying in {current_delay} seconds due to rate limit...")
                 time.sleep(current_delay)
             else:
@@ -69,12 +61,12 @@ Hints:
                 time.sleep(RETRY_DELAY)
             else:
                 print("    Max retries reached. Skipping hint generation for this problem.")
-                return None # Or raise the exception if you want to stop the whole script
+                return None
 
 def main():
-    # Load the input dataset
     input_data = []
     print(f"Attempting to load dataset from: {INPUT_DATASET_PATH}")
+    # ... (dataset loading logic remains the same) ...
     try:
         if INPUT_DATASET_PATH.endswith(".jsonl"):
             with open(INPUT_DATASET_PATH, 'r', encoding='utf-8') as f:
@@ -83,12 +75,11 @@ def main():
                         input_data.append(json.loads(line))
                     except json.JSONDecodeError as je:
                         print(f"Error decoding JSON on line {line_num+1} in {INPUT_DATASET_PATH}: {je}")
-                        # Decide whether to skip this line or stop
         elif INPUT_DATASET_PATH.endswith(".json"):
             with open(INPUT_DATASET_PATH, 'r', encoding='utf-8') as f:
-                input_data = json.load(f) # Assumes a list of objects
+                input_data = json.load(f)
         else:
-            print(f"Error: Unsupported input file format: {INPUT_DATASET_PATH}. Please use .json or .jsonl")
+            print(f"Error: Unsupported input file format: {INPUT_DATASET_PATH}.")
             return
     except FileNotFoundError:
         print(f"Error: Input file not found at {INPUT_DATASET_PATH}")
@@ -100,7 +91,6 @@ def main():
     if not isinstance(input_data, list):
         print(f"Error: Expected a list of problems from {INPUT_DATASET_PATH}, but got {type(input_data)}")
         return
-
     print(f"Loaded {len(input_data)} problems from {INPUT_DATASET_PATH}")
 
     processed_data = []
@@ -109,14 +99,18 @@ def main():
     for i, item in enumerate(input_data):
         print(f"\nProcessing problem {i+1}/{len(input_data)}...")
         original_problem_text = item.get("problem")
-        original_solution = item.get("solution") # Assuming this key exists as per your example
+        # --- MODIFIED SECTION TO GET BOTH SOLUTION TYPES ---
+        original_detailed_solution = item.get("solution") # This is the long official solution
+        original_concise_answer = item.get("answer")    # This is the short final answer (e.g., "60")
+        # --- END OF MODIFIED SECTION ---
 
         if not original_problem_text:
             print(f"  Warning: Skipping item {i+1} due to missing 'problem' field.")
             continue
-        # 'solution' might be optional for hint generation, but required for the output structure
-        if original_solution is None: # Check for None explicitly if empty string is valid
-             print(f"  Warning: Item {i+1} has a missing or null 'solution' field. It will be null in output.")
+        if original_detailed_solution is None:
+             print(f"  Warning: Item {i+1} has a missing or null 'detailed_solution' field.")
+        if original_concise_answer is None:
+             print(f"  Warning: Item {i+1} has a missing or null 'answer' (concise final answer) field. This will be critical for evaluation.")
 
 
         print(f"  Original Problem (first 100 chars): {original_problem_text[:100].replace(os.linesep, ' ')}...")
@@ -125,36 +119,27 @@ def main():
 
         if generated_hint:
             print(f"  Generated Hint (first 100 chars): {generated_hint[:100].replace(os.linesep, ' ')}...")
+            # --- MODIFIED DATAPOINT STRUCTURE ---
             new_datapoint = {
                 "question": original_problem_text,
                 "hint": generated_hint,
-                "solution": original_solution # Will be None if original_solution was None
+                "detailed_solution": original_detailed_solution, # Store the long one for reference
+                "final_answer_gt": original_concise_answer     # Store the short one for evaluation
             }
-            # You might want to include other fields from the original item if needed
-            # For example:
+            # You can still include other original fields if needed:
             # new_datapoint["domain"] = item.get("domain")
             # new_datapoint["difficulty"] = item.get("difficulty")
-            # new_datapoint["answer"] = item.get("answer") # The short final answer
             # new_datapoint["source"] = item.get("source")
+            # --- END OF MODIFIED DATAPOINT STRUCTURE ---
             processed_data.append(new_datapoint)
         else:
             print(f"  Failed to generate hint for problem {i+1}. This problem will not be included in the output.")
             failed_to_get_hint_count += 1
-            # If you want to include it anyway with a null/empty hint:
-            # new_datapoint = {
-            #     "question": original_problem_text,
-            #     "hint": None,
-            #     "solution": original_solution
-            # }
-            # processed_data.append(new_datapoint)
 
-
-    # Save the new dataset
-    # Writing as JSONL (one JSON object per line) is good for large datasets
     try:
         with open(OUTPUT_DATASET_PATH, 'w', encoding='utf-8') as f_out:
             for entry in processed_data:
-                json.dump(entry, f_out, ensure_ascii=False) # ensure_ascii=False for better unicode handling
+                json.dump(entry, f_out, ensure_ascii=False)
                 f_out.write('\n')
         print(f"\nSuccessfully generated hints for {len(processed_data)} problems.")
         if failed_to_get_hint_count > 0:
@@ -163,7 +148,5 @@ def main():
     except IOError as e:
         print(f"Error writing output file {OUTPUT_DATASET_PATH}: {e}")
 
-
 if __name__ == "__main__":
-    # litellm.set_verbose=True # Uncomment for more detailed litellm debugging
     main()
