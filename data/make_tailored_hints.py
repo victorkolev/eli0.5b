@@ -4,7 +4,7 @@ import json
 import time
 
 # --- Configuration ---
-TOGETHERAI_API_KEY = "4e8fd7f0826fb9dbaefcbaa1e3788ca9cad3614c17f88989087c6e3a38bafb00" 
+TOGETHERAI_API_KEY = ""
 LLM_MODEL = "together_ai/meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
 INPUT_DATASET_PATH = "/Users/ifditahasanorney/Documents/GitHub/eli0.5b/omnimath_100.jsonl"
 # OUTPUT_DATASET_PATH will be set dynamically
