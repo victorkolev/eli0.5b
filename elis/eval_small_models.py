@@ -50,7 +50,10 @@ def fish_answer(response):
 
 def check_answer(answers, truth, backend='antlr'):
     results = []
-    ans_sympy = latex2sympy(truth)
+    try:
+        ans_sympy = latex2sympy(truth)
+    except:
+        return None
     for ans in answers:
         if ans is None:
             results.append(False)
@@ -68,8 +71,9 @@ def check_answer(answers, truth, backend='antlr'):
 def pass_k(model, prompt, truth, k):
     responses = get_responses(model, prompt, k)
     answers = list(map(fish_answer, responses))
-    success = check_answer(answers, truth).any()
-    return success
+    success = check_answer(answers, truth)
+    if success is None: return None
+    return success.any()
 
 
 def load_data(file_path="omnimath_100.json"):
@@ -101,7 +105,9 @@ def get_prompt(question, hint):
 def evaluate(model, data, k=1):
     success = []
     for prompt, answer in tqdm(zip(data['prompt'], data['answer']), desc=f"Evaluating {model}"):
-        success.append(pass_k(model, prompt, answer, k))
+        s = pass_k(model, prompt, answer, k)
+        if s is not None:
+            success.append(s)
 
     return np.array(success)
 
