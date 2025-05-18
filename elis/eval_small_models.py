@@ -6,6 +6,7 @@ from litellm import completion
 from sympy.parsing.latex import parse_latex  # :contentReference[oaicite:0]{index=0}
 from sympy import simplify
 from tqdm import tqdm
+from collections import defaultdict
 
 all_models = {
     "0.5": "ollama/qwen3:0.6b",
@@ -70,6 +71,11 @@ def load_data(file_path="omnimath_100.json"):
                 dataset_with_hints.append(json.loads(line))
             except json.JSONDecodeError as e:
                 print(f"Skipping malformed line {line_num+1}")
+
+    data = defaultdict(list)
+    for l in dataset_with_hints:
+        for k, v in l.items():
+            data[k].append(v)
     return dataset_with_hints
 
 def get_prompt(question, hint):
