@@ -1,5 +1,5 @@
 # eli5b
-Explain Like I'm 5B. Improving communication between large languge models and small language models. A project done for the Stanford 8VC + Meta Llama Hackathon. 
+Explain Like I'm 5B. Improving communication between large languge models and small language models. A project done for the Stanford 8VC + Meta Llama Hackathon. Work done by Jubayer Ibn Hamid, Ifdita Orney, and Victor Kolev.
 
 ## Motivation
 Agentic systems involve multiple models interacting with each other. Often this takes the form of a large "System 2" LLM instructing a smaller, task-specific "System 1" L(S)LM. For example, many SWE agents hand off repo exploration to a small models for better efficiency; in robotics, VLA models are often small so that they can be fast for high-frequency control. 
