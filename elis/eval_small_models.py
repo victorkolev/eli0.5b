@@ -63,9 +63,14 @@ def pass_k(model, prompt, truth, k):
 
 
 def load_data(file_path="omnimath_100.json"):
-    with open(file_path) as f:
-        data = json.load(f)
-    return data
+    dataset_with_hints = []
+    with open(file_path, "r", encoding="utf-8") as f:
+        for line_num, line in enumerate(f): # Added line_num for better error reporting
+            try:
+                dataset_with_hints.append(json.loads(line))
+            except json.JSONDecodeError as e:
+                print(f"Skipping malformed line {line_num+1}")
+    return dataset_with_hints
 
 def get_prompt(question, hint):
     return f"""
