@@ -64,10 +64,21 @@ def pass_k(model, prompt, truth, k):
 
 def load_data(file_path="omnimath_100.json"):
     with open(file_path) as f:
-        d = json.load(f)
+        data = json.load(f)
+    return data
 
-def evaluate(model, k=1):
-    data = load_data()
+def get_prompt(question, hint):
+    return f"""
+    Here is a math question that you should solve. 
+    {question}
+
+    Follow these step-by-step instructions to arrive at the answer. 
+    {hint}
+
+    Include your answer in <answer></answer> tag. 
+    """
+
+def evaluate(model, data, k=1):
     success = []
     for prompt, answer in tqdm(zip(data['prompt'], data['answer']), desc=f"Evaluating {model}"):
         success.append(pass_k(model, prompt, answer, k))
@@ -80,8 +91,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, nargs='+', default=all_models.values(), help="One or more models to evaluate")
-    parser.add_argument("--data", type=str, default="omnimath_100.json")
+    parser.add_argument("--data", type=str, default="omnimath_100_with_hints_v2.jsonl")
     args = parser.parse_args()
+
+    data = load_data(args.data)
+    data['answer'] = data['final_answer_gt']
+    data['prompt'] = map(get_prompt, zip(data['question'], data['hint']))
     for model in args.model:
         success = evaluate(model)
         print(f"\n\n---------Evaluating model {model}--------\n\n\n")
