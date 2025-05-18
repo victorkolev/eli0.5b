@@ -55,10 +55,13 @@ def check_answer(answers, truth, backend='antlr'):
         if ans is None:
             results.append(False)
         else:
-            expr1 = latex2sympy(ans)
-
-            eq = simplify(expr1 - ans_sympy) == 0
-            results.append(bool(eq))
+            try:
+                expr1 = latex2sympy(ans)
+                eq = simplify(expr1 - ans_sympy) == 0
+                results.append(bool(eq))
+            except:
+                print("parsing fail, ", ans)
+                results.append(False)
 
     return np.array(results)
 
