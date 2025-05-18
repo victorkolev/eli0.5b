@@ -58,7 +58,7 @@ def check_answer(answers, truth, backend='antlr'):
 
 def pass_k(model, prompt, truth, k):
     responses = get_responses(model, prompt, k)
-    answers = map(fish_answer, responses)
+    answers = list(map(fish_answer, responses))
     success = check_answer(answers, truth).any()
     return success
 
@@ -76,7 +76,7 @@ def load_data(file_path="omnimath_100.json"):
     for l in dataset_with_hints:
         for k, v in l.items():
             data[k].append(v)
-    return dataset_with_hints
+    return data
 
 def get_prompt(question, hint):
     return f"""
@@ -107,8 +107,8 @@ if __name__ == "__main__":
 
     data = load_data(args.data)
     data['answer'] = data['final_answer_gt']
-    data['prompt'] = map(get_prompt, zip(data['question'], data['hint']))
+    data['prompt'] = list(map(get_prompt, data['question'], data['hint']))
     for model in args.model:
-        success = evaluate(model)
+        success = evaluate(model, data)
         print(f"\n\n---------Evaluating model {model}--------\n\n\n")
         print("success rate for pass@1: ", np.mean(success))
