@@ -9,8 +9,8 @@ from tqdm import tqdm
 
 all_models = {
     "0.5": "ollama/qwen3:0.6b",
-    "1": "ollama/llama3.2:1b-instruct",
-    "3": "ollama/llama3.2:3b-instuct",
+    "1": "ollama/llama3.2:1b",
+    "3": "ollama/llama3.2:3b",
 }
 
 def get_responses(model, prompt, k=1):
